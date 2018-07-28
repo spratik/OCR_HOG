@@ -259,11 +259,12 @@ void BoundingBox (ConnectedComponent *obj ,const int cols ,const int rows ,char 
 	/// store the MAX. value of col
 	int Cmax;
 	char buf[1024];
-
+	char buf1[1024];
 	int x = 0;
 	int y = 0;
 
 	sprintf(buf, "%s/blobdetectionFile.txt",bounding_box_file);
+	sprintf(buf1, "%s/CC.pbm",bounding_box_file);
 	ofstream boudingBoxFile(buf);
 	/// scan the each connected component and draw the reactangle box
 	for(int i = 0; i < obj-> G_box ; i++)
@@ -280,6 +281,46 @@ void BoundingBox (ConnectedComponent *obj ,const int cols ,const int rows ,char 
 		/// take height of the connected component
 		height = obj-> G_bounding_box[i][3];
 
+		Cmax = width + Cmin;
+
+		///find the Rmax value
+		Rmax = height + Rmin;
+
+		//cout << "c: " << Cmin << " r : " <<  Rmin << " width: " << width << " height : " << height << endl;
+
+		/// scan the connected component from left top to right top and get the index value as per row and col as well as assign 255 value to each index of the connected_component buffer
+		for(int c1 = Cmin ; c1 < Cmax  ; c1++ )
+		{
+			index = Rmin * cols + c1 ;
+			obj-> G_connected_points[index] = 255;
+		}
+
+		/// scan the connected component from  top right  to bottom  and get the index value as per row and col as well as assign 255 value to each index of the connected_component buffer
+		for(int r1 = Rmin ; r1 < Rmax  ; r1++ )
+		{
+			index = r1 * cols + Cmax ;
+			obj-> G_connected_points[index] = 255;
+		}
+
+		/// scan the connected component from top left to bottom  and get the index value as per row and col as well as assign 255 value to each index of the connected_component buffer
+		for( int r1 = Rmin ; r1 < Rmax  ; r1++ )/// top left
+		{
+			index = r1 * cols + Cmin ;
+			obj-> G_connected_points[index] = 255;
+		}
+
+		/// scan the connected component from bottom left to  bottom right and get the index value as per row and col as well as assign 255 value to each index of the connected_component buffer
+		for(int c1 = Cmin ; c1 <= Cmax  ; c1++ )/// bottom
+		{
+			index = Rmax * cols + c1 ;
+			obj-> G_connected_points[index] = 255;
+		}
+
+		/// find the size fo the image
+		int size = rows * cols;
+
+		/// dump connected component buffer into the file and later display this  buffer
+		dumpDataIntoFile (obj ,size ,cols ,rows ,buf1);
 
 		if(Cmin - 2 >= 0 ){
 			x = Cmin - 2;
@@ -301,35 +342,25 @@ void BoundingBox (ConnectedComponent *obj ,const int cols ,const int rows ,char 
 		}
 
 
-
-
-		if((width <= 200 && width >=2) && (height <= 200 && height >=2)){
-
-			if(width*height >= 100){
-				boudingBoxFile << x << " " << y << " " << width << " " <<  height << endl;
-				Mat croppedImage(image,Rect(x,y,width , height ));
-				if(!croppedImage.data){
-					cout << "Image read error" << endl;
-					return;
-				}
-
-				//sprintf(buf, "%s/image_%d.png",bounding_box_file,count);
-				//imwrite(buf,croppedImage);
-				//croppedImage.release();
-				//sprintf(buf, "image_%d.png",count++);
-				//boudingBoxFile << buf << endl;
-
+		size = width*height;
+		if(size >= 100 && size < 300){
+			boudingBoxFile << x << " " << y << " " << width << " " <<  height << endl;
+			Mat croppedImage(image,Rect(x,y,width , height ));
+			if(!croppedImage.data){
+				cout << "Image read error" << endl;
+				return;
 			}
 
-
+			//sprintf(buf, "%s/image_%d.png",bounding_box_file,count);
+			//imwrite(buf,croppedImage);
+			//croppedImage.release();
+			//sprintf(buf, "image_%d.png",count++);
+			//boudingBoxFile << buf << endl;
 
 		}
-
 	}
 
 	boudingBoxFile.close();
-
-
 }
 
 /* dump buffer data
@@ -343,11 +374,12 @@ void dumpDataIntoFile (ConnectedComponent *obj ,int size ,int cols ,int rows ,ch
 	ofstream myfile(output);
 
 	/// dump P1 first into it for create the binary image
-	myfile <<  "P3" << endl;
+	myfile <<  "P1" << endl;
 
 	/// dump the width and height of the image
 	myfile <<  cols  <<  " " << rows << endl;
 
+	myfile << "255" << endl;
 
 	/// scan the image for create the binary file	
 	for(int i = 0; i < size ; i++ )
